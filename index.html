@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#091117">
+    <meta name="description" content="A real acoustic modem laboratory: watch sound carry bits and bytes through air.">
+    <title>Acoustic Modem · Signal Laboratory</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="masthead">
+        <a class="brand" href="./" aria-label="Acoustic Modem home"><span class="brand-icon">≋</span><span>ACOUSTIC<span class="brand-light"> / MODEM</span></span></a>
+        <div class="wall-clock">
+          <span class="clock-dot"></span>
+          <span id="clock">00:00:00</span>
+          <small>LOCAL CLOCK</small>
+        </div>
+      </header>
+      <div class="role-bar">
+        <div class="role-switch" role="group" aria-label="Choose device role">
+          <button id="role-tx" class="selected" aria-pressed="true">↗ Transmitter <kbd>TX</kbd></button>
+          <button id="role-rx" aria-pressed="false">↙ Receiver <kbd>RX</kbd></button>
+        </div>
+      </div>
+      <main>
+        <div id="notice" class="notice" role="alert" hidden></div>
+        <section id="tx-view">
+          <div class="section-top">
+            <div class="tabs" role="group" aria-label="Transmitter mode">
+              <button id="tab-modem" class="selected">Digital modem</button>
+              <button id="tab-tone">Tone generator</button>
+            </div>
+          </div>
+          <div id="tone-view" class="panel tone-panel" hidden>
+            <div class="tone-readout">
+              <span id="tone-hz">1200</span>
+              <span>Hz</span>
+            </div>
+            <div class="tone-controls">
+              <label class="grow">Frequency<input id="tone-slider" type="range" min="200" max="5000" value="1200" step="1"></label>
+              <label>Exact frequency (Hz)<input id="tone-number" type="number" min="200" max="5000" value="1200"></label>
+            </div>
+            <label>Output volume <output id="tone-volume-label">20%</output><input id="tone-volume" type="range" min="0" max="0.8" step="0.01" value="0.2"></label>
+            <div class="actions">
+              <button id="tone-toggle" class="primary">▶ Start tone</button>
+              <button id="morse-toggle" aria-pressed="false" aria-describedby="morse-help">Morse key · OFF</button>
+              <span id="morse-status" class="status" hidden>KEY UP</span>
+            </div>
+            <p id="morse-help" class="mode-note" hidden>Hold SPACE for tone; release for silence.</p>
+          </div>
+          <div id="modem-view">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Compose a frame</h2>
+                </div>
+                <label class="inline-label">Multiplexing <select id="tx-mode"><option>None</option><option>FDM</option><option>TDM</option></select></label>
+              </div>
+              <div class="message-grid">
+                <label class="message-label a"><span><span id="message-a-title">● CHANNEL A</span> <output id="count-a">0 / 10</output></span><input id="message-a" type="text" value="HELLOWORLD" autocomplete="off" spellcheck="false" aria-describedby="validation-a"><small id="validation-a"></small><span class="frequency-note" id="tx-freq-a">0 → 1200 Hz &nbsp; 1 → 1600 Hz</span></label>
+                <label class="message-label b"><span>● CHANNEL B <output id="count-b">0 / 10</output></span><input id="message-b" type="text" value="DOGS__CATS" autocomplete="off" spellcheck="false" aria-describedby="validation-b"><small id="validation-b"></small><span class="frequency-note" id="tx-freq-b">0 → 2800 Hz &nbsp; 1 → 3200 Hz</span></label>
+              </div>
+              <label class="volume-label">Modem output volume <output id="modem-volume-label">35%</output><input id="modem-volume" type="range" min="0" max="0.8" step="0.01" value="0.35"></label>
+              <div class="actions">
+                <button id="tx-arm" class="primary">◎ Arm transmitter</button>
+                <button id="tx-disarm" hidden>Disarm</button>
+                <button id="tx-stop" class="danger" hidden>■ Stop</button>
+                <span class="muted" id="tx-snapshot"></span>
+              </div>
+            </div>
+            <div class="panel frame-panel">
+              <div class="panel-heading">
+                <h2>Transmission timeline</h2>
+                <span id="tx-state" class="status">IDLE</span>
+              </div>
+              <div class="metrics">
+                <div>
+                  <span>NEXT BOUNDARY</span>
+                  <strong id="tx-countdown">—</strong>
+                </div>
+                <div>
+                  <span>PHYSICAL BYTE</span>
+                  <strong id="tx-byte">— / 10</strong>
+                </div>
+                <div>
+                  <span>BIT POSITION</span>
+                  <strong id="tx-bit">— / 8</strong>
+                </div>
+                <div>
+                  <span id="tx-air-label">ON AIR · A / B</span>
+                  <strong id="tx-frequencies">— / —</strong>
+                </div>
+              </div>
+              <div class="timeline">
+                <div id="tx-progress"></div>
+                <span class="silence-marker"></span>
+              </div>
+              <div class="timeline-labels">
+                <span>0 s · FRAME START</span>
+                <span>56 s · SILENCE</span>
+                <span>60 s</span>
+              </div>
+              <div id="tx-detail" class="mode-note" hidden></div>
+            </div>
+          </div>
+        </section>
+        <div id="rx-modes" class="section-top" hidden>
+          <div class="tabs" role="group" aria-label="Receiver mode">
+            <button id="rx-tab-spectrogram" class="selected" aria-pressed="true">Spectrogram</button>
+            <button id="rx-tab-decoder" aria-pressed="false">FSK Decoder</button>
+          </div>
+        </div>
+        <section id="rx-view" hidden>
+          <div class="panel microphone-panel">
+            <div class="mic-controls">
+              <div>
+                <h2>Microphone input</h2>
+                <span id="mic-state" class="muted">No microphone active</span>
+              </div>
+              <label class="grow">Audio input<select id="mic-device"><option value="">System default</option></select></label>
+              <button id="mic-stop" hidden>Stop microphone</button>
+              <button id="resume-audio" hidden>Resume audio</button>
+            </div>
+            <div class="input-meter">
+              <span>INPUT</span>
+              <div class="meter-track">
+                <div id="meter-fill"></div>
+              </div>
+              <span id="meter-db">−∞ dBFS</span>
+              <span id="input-warning"></span>
+            </div>
+            <details>
+              <summary>Capture diagnostics</summary>
+              <p id="mic-settings" class="mono">Settings will appear after microphone activation.</p>
+              <p class="muted">Requested: echo cancellation, noise suppression, and automatic gain control off. No microphone audio is routed to speakers.</p>
+            </details>
+          </div>
+          <div class="panel spectrum-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Frequency / time</h2>
+              </div>
+              <div class="spectrum-tools">
+                <span id="rx-state" class="status">IDLE</span>
+                <label>Range<select id="spectrum-range"><option value="4000">0–4 kHz</option><option value="6000">0–6 kHz</option></select></label>
+              </div>
+            </div>
+            <canvas id="spectrogram" tabindex="0" role="img" aria-label="Microphone spectrogram. Time runs from zero to sixty seconds; frequency increases upwards. Use arrow keys to inspect bit slots."></canvas>
+            <div class="spectrum-footer">
+              <span id="frame-label">LIVE · FIXED TO LOCAL MINUTE</span>
+              <div class="gradient-key">
+                <span id="spectrum-min-level">-60</span>
+                <i></i>
+                <span id="spectrum-max-level">-18 dBFS</span>
+              </div>
+            </div>
+            <div id="inspection" class="inspection" hidden></div>
+          </div>
+          <div class="panel decoder-controls">
+            <div class="panel-heading">
+              <div>
+                <h2 id="rx-control-title">Continuous spectrogram</h2>
+                <p id="rx-help" hidden></p>
+              </div>
+            </div>
+            <div class="decoder-settings">
+              <label>Multiplexing<select id="rx-mode"><option>None</option><option>FDM</option><option>TDM</option></select></label>
+              <label>Timing offset (ms)<input id="rx-offset" type="number" min="-500" max="500" step="10" value="0" required></label>
+            </div>
+            <details class="threshold-settings">
+              <summary>Detection thresholds</summary>
+              <div class="decoder-settings">
+                <label>Signal floor (dBFS)<input id="rx-floor" type="number" min="-90" max="-10" value="-50" required></label>
+                <label>Separation (dB)<input id="rx-separation" type="number" min="1" max="30" value="6" required></label>
+              </div>
+            </details>
+            <div class="actions" id="spectrum-controls">
+              <button id="spectrum-start" class="primary">▶ Start</button>
+              <button id="spectrum-freeze">❚❚ Freeze</button>
+              <button id="spectrum-stop">■ Stop</button>
+            </div>
+            <div class="actions">
+              <button id="rx-arm" class="primary">◎ Arm receiver</button>
+              <button id="rx-disarm" hidden>Disarm</button>
+              <button id="rx-stop" class="danger" hidden>■ Stop & freeze</button>
+              <button id="rx-show-frame" hidden>View captured frame</button>
+              <button id="export-frame" hidden>↓ Export JSON</button>
+              <span id="rx-countdown" class="mono muted" hidden></span>
+            </div>
+          </div>
+          <div id="channels" class="channel-grid"></div>
+        </section>
+        <details class="lab-notes">
+          <summary>Protocol & tests</summary>
+          <div class="reference-grid">
+            <div>
+              <h3>A deliberately visible protocol</h3>
+              <p>8 bits make a byte in 5.6 seconds. Each minute holds 10 physical bytes followed by 4 seconds of silence. Messages use printable ASCII and trailing space padding.</p>
+              <p><b>None:</b> One message on 1200 / 1600 Hz. <b>FDM:</b> A uses 1200 / 1600 Hz; B uses 2800 / 3200 Hz. <b>TDM:</b> A and B alternate whole bytes on 1200 / 1600 Hz.</p>
+              <p>Synchronize both laptops’ system clocks first. Use wired or built-in audio; keep this tab active. There is no preamble or automatic synchronization.</p>
+            </div>
+            <div>
+              <h3>Test the actual DSP pipeline</h3>
+              <p>Internal loopback passes generated PCM through the same modulator and decoder used by the worklets. It does not use a microphone and does not verify transmission through air.</p>
+              <div class="actions">
+                <button id="loop-none">Test None</button>
+                <button id="loop-fdm">Test FDM</button>
+                <button id="loop-tdm">Test TDM</button>
+              </div>
+              <output id="loop-result" class="mono">Not run</output>
+            </div>
+          </div>
+        </details>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
